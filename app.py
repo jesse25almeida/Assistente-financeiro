@@ -1,6 +1,6 @@
 import os
 import re
-from flask import Flask, request, jsonify
+from flask import Flask, request, Response
 
 app = Flask(__name__)
 
@@ -12,6 +12,7 @@ def home():
     return "Assistente Financeiro funcionando!", 200
 
 
+# Mantemos esta rota para a verificacao da Meta
 @app.route("/webhook", methods=["GET"])
 def verificar_webhook():
     mode = request.args.get("hub.mode")
@@ -21,20 +22,15 @@ def verificar_webhook():
     if mode == "subscribe" and token == VERIFY_TOKEN:
         return challenge, 200
 
-    return "Token de verificacao invalido", 403
+    return "Webhook funcionando", 200
 
 
 def entender_mensagem(texto):
-    texto_original = texto
-    texto = texto.lower().strip()
+    texto_lower = texto.lower().strip()
 
-    # Procura valores como:
-    # 50
-    # 50,90
-    # R$ 50
     valor_encontrado = re.search(
         r"(?:r\$\s*)?(\d+(?:[.,]\d{1,2})?)",
-        texto
+        texto_lower
     )
 
     valor = None
@@ -59,44 +55,65 @@ def entender_mensagem(texto):
         "receita"
     ]
 
-    if any(palavra in texto for palavra in palavras_despesa):
+    if any(palavra in texto_lower for palavra in palavras_despesa):
         tipo = "despesa"
 
-    elif any(palavra in texto for palavra in palavras_receita):
+    elif any(palavra in texto_lower for palavra in palavras_receita):
         tipo = "receita"
 
     else:
         tipo = "desconhecido"
 
-    return {
-        "mensagem": texto_original,
-        "tipo": tipo,
-        "valor": valor
-    }
+    return tipo, valor
+
+
+def criar_resposta(texto):
+    tipo, valor = entender_mensagem(texto)
+
+    if tipo == "despesa" and valor is not None:
+        valor_formatado = f"{valor:.2f}".replace(".", ",")
+
+        return (
+            "✅ Despesa identificada!\n\n"
+            f"💰 Valor: R$ {valor_formatado}\n"
+            f"📝 {texto}"
+        )
+
+    if tipo == "receita" and valor is not None:
+        valor_formatado = f"{valor:.2f}".replace(".", ",")
+
+        return (
+            "💵 Receita identificada!\n\n"
+            f"💰 Valor: R$ {valor_formatado}\n"
+            f"📝 {texto}"
+        )
+
+    return (
+        "👋 Sou seu Assistente Financeiro.\n\n"
+        "Você pode me enviar mensagens como:\n"
+        "• Gastei 50 reais no mercado\n"
+        "• Paguei R$ 120 de energia\n"
+        "• Recebi 3000 de salário"
+    )
 
 
 @app.route("/webhook", methods=["POST"])
 def receber_webhook():
-    dados = request.get_json(silent=True) or {}
 
-    print("Evento recebido da Meta:", dados, flush=True)
+    # A Twilio envia mensagens como formulario
+    mensagem = request.form.get("Body", "").strip()
 
-    # Por enquanto apenas recebemos o evento.
-    # Quando a conta da Meta for reativada,
-    # vamos extrair a mensagem e responder pelo WhatsApp.
+    print("Mensagem recebida:", mensagem, flush=True)
 
-    return jsonify({"status": "EVENT_RECEIVED"}), 200
+    resposta = criar_resposta(mensagem)
 
+    # TwiML: instrui a Twilio a responder no WhatsApp
+    twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Message>{resposta}</Message>
+</Response>"""
 
-@app.route("/teste", methods=["POST"])
-def testar_assistente():
-    dados = request.get_json(silent=True) or {}
-
-    mensagem = dados.get("mensagem", "")
-
-    resultado = entender_mensagem(mensagem)
-
-    return jsonify(resultado), 200
+    return Response(twiml, mimetype="application/xml")
 
 
 if __name__ == "__main__":
