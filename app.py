@@ -1,11 +1,15 @@
 import os
 import re
 from flask import Flask, request
-from twilio.twiml.messaging_response import MessagingResponse
+from twilio.rest import Client
 
 app = Flask(__name__)
 
 VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "meu_token_financeiro_2026")
+
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
+TWILIO_WHATSAPP_NUMBER = os.getenv("TWILIO_WHATSAPP_NUMBER")
 
 
 @app.route("/", methods=["GET"])
@@ -13,6 +17,7 @@ def home():
     return "Assistente Financeiro funcionando!", 200
 
 
+# Mantemos a verificacao antiga da Meta
 @app.route("/webhook", methods=["GET"])
 def verificar_webhook():
     mode = request.args.get("hub.mode")
@@ -36,7 +41,9 @@ def entender_mensagem(texto):
     valor = None
 
     if valor_encontrado:
-        valor = float(valor_encontrado.group(1).replace(",", "."))
+        valor = float(
+            valor_encontrado.group(1).replace(",", ".")
+        )
 
     palavras_despesa = [
         "gastei", "paguei", "comprei", "despesa"
@@ -48,8 +55,10 @@ def entender_mensagem(texto):
 
     if any(p in texto_lower for p in palavras_despesa):
         tipo = "despesa"
+
     elif any(p in texto_lower for p in palavras_receita):
         tipo = "receita"
+
     else:
         tipo = "desconhecido"
 
@@ -79,7 +88,7 @@ def criar_resposta(texto):
 
     return (
         "👋 Sou seu Assistente Financeiro.\n\n"
-        "Experimente enviar:\n"
+        "Experimente:\n"
         "Gastei 50 reais no mercado\n"
         "ou\n"
         "Recebi 3000 de salário"
@@ -89,19 +98,42 @@ def criar_resposta(texto):
 @app.route("/webhook", methods=["POST"])
 def receber_webhook():
     mensagem = request.form.get("Body", "").strip()
+    remetente = request.form.get("From", "").strip()
 
     print("Mensagem recebida:", mensagem, flush=True)
+    print("Remetente:", remetente, flush=True)
 
-    resposta_texto = criar_resposta(mensagem)
+    if not mensagem or not remetente:
+        return "OK", 200
 
-    resposta = MessagingResponse()
-    resposta.message(resposta_texto)
+    resposta = criar_resposta(mensagem)
 
-    print("Resposta enviada:", resposta_texto, flush=True)
+    try:
+        client = Client(
+            TWILIO_ACCOUNT_SID,
+            TWILIO_AUTH_TOKEN
+        )
 
-    return str(resposta), 200, {
-        "Content-Type": "application/xml"
-    }
+        mensagem_enviada = client.messages.create(
+            body=resposta,
+            from_=TWILIO_WHATSAPP_NUMBER,
+            to=remetente
+        )
+
+        print(
+            "Resposta enviada pela Twilio:",
+            mensagem_enviada.sid,
+            flush=True
+        )
+
+    except Exception as erro:
+        print(
+            "ERRO AO ENVIAR:",
+            str(erro),
+            flush=True
+        )
+
+    return "OK", 200
 
 
 if __name__ == "__main__":
