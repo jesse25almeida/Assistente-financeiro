@@ -1,6 +1,7 @@
 import os
 import re
-from flask import Flask, request, Response
+from flask import Flask, request
+from twilio.twiml.messaging_response import MessagingResponse
 
 app = Flask(__name__)
 
@@ -12,7 +13,6 @@ def home():
     return "Assistente Financeiro funcionando!", 200
 
 
-# Mantemos esta rota para a verificacao da Meta
 @app.route("/webhook", methods=["GET"])
 def verificar_webhook():
     mode = request.args.get("hub.mode")
@@ -36,31 +36,20 @@ def entender_mensagem(texto):
     valor = None
 
     if valor_encontrado:
-        valor = float(
-            valor_encontrado.group(1).replace(",", ".")
-        )
+        valor = float(valor_encontrado.group(1).replace(",", "."))
 
     palavras_despesa = [
-        "gastei",
-        "paguei",
-        "comprei",
-        "despesa"
+        "gastei", "paguei", "comprei", "despesa"
     ]
 
     palavras_receita = [
-        "recebi",
-        "ganhei",
-        "salario",
-        "salário",
-        "receita"
+        "recebi", "ganhei", "salario", "salário", "receita"
     ]
 
-    if any(palavra in texto_lower for palavra in palavras_despesa):
+    if any(p in texto_lower for p in palavras_despesa):
         tipo = "despesa"
-
-    elif any(palavra in texto_lower for palavra in palavras_receita):
+    elif any(p in texto_lower for p in palavras_receita):
         tipo = "receita"
-
     else:
         tipo = "desconhecido"
 
@@ -90,30 +79,29 @@ def criar_resposta(texto):
 
     return (
         "👋 Sou seu Assistente Financeiro.\n\n"
-        "Você pode me enviar mensagens como:\n"
-        "• Gastei 50 reais no mercado\n"
-        "• Paguei R$ 120 de energia\n"
-        "• Recebi 3000 de salário"
+        "Experimente enviar:\n"
+        "Gastei 50 reais no mercado\n"
+        "ou\n"
+        "Recebi 3000 de salário"
     )
 
 
 @app.route("/webhook", methods=["POST"])
 def receber_webhook():
-
-    # A Twilio envia mensagens como formulario
     mensagem = request.form.get("Body", "").strip()
 
     print("Mensagem recebida:", mensagem, flush=True)
 
-    resposta = criar_resposta(mensagem)
+    resposta_texto = criar_resposta(mensagem)
 
-    # TwiML: instrui a Twilio a responder no WhatsApp
-    twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-    <Message>{resposta}</Message>
-</Response>"""
+    resposta = MessagingResponse()
+    resposta.message(resposta_texto)
 
-    return Response(twiml, mimetype="application/xml")
+    print("Resposta enviada:", resposta_texto, flush=True)
+
+    return str(resposta), 200, {
+        "Content-Type": "application/xml"
+    }
 
 
 if __name__ == "__main__":
