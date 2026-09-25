@@ -79,7 +79,34 @@ def adicionar_ativo():
         "status": "ok",
         "mensagem": "Ativo salvo com sucesso"
     }), 201
+@app.route("/api/ativos", methods=["GET"])
 
+def listar_ativos():
+    conexao = conectar_banco()
+    cursor = conexao.cursor()
+
+    cursor.execute("""
+        SELECT id, ativo, quantidade, preco_medio
+        FROM ativos
+        ORDER BY id
+    """)
+
+    registros = cursor.fetchall()
+
+    cursor.close()
+    conexao.close()
+
+    ativos = []
+
+    for registro in registros:
+        ativos.append({
+            "id": registro[0],
+            "ativo": registro[1],
+            "quantidade": float(registro[2]),
+            "preco_medio": float(registro[3])
+        })
+
+    return jsonify(ativos), 200
 @app.route("/privacidade", methods=["GET"])
 def privacidade():
     return """
