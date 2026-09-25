@@ -48,6 +48,37 @@ def home():
 @app.route("/carteira", methods=["GET"])
 def carteira():
     return send_file("carteira.html")
+    
+@app.route("/api/ativos", methods=["POST"])
+def adicionar_ativo():
+    dados = request.get_json()
+
+    ativo = dados.get("ativo", "").strip().upper()
+    quantidade = dados.get("quantidade")
+    preco_medio = dados.get("preco_medio")
+
+    if not ativo or not quantidade or not preco_medio:
+        return jsonify({"erro": "Preencha todos os campos"}), 400
+
+    conexao = conectar_banco()
+    cursor = conexao.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO ativos (ativo, quantidade, preco_medio)
+        VALUES (%s, %s, %s)
+        """,
+        (ativo, quantidade, preco_medio)
+    )
+
+    conexao.commit()
+    cursor.close()
+    conexao.close()
+
+    return jsonify({
+        "status": "ok",
+        "mensagem": "Ativo salvo com sucesso"
+    }), 201
 
 @app.route("/privacidade", methods=["GET"])
 def privacidade():
