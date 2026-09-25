@@ -1,7 +1,7 @@
 import os
 import re
 import requests
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 
 app = Flask(__name__)
 
@@ -20,7 +20,7 @@ META_API_VERSION = os.getenv("META_API_VERSION")
 
 @app.route("/", methods=["GET"])
 def home():
-    return "Assistente Financeiro funcionando com Meta!", 200
+    return send_file("dashboard.html")
 
 @app.route("/privacidade", methods=["GET"])
 def privacidade():
