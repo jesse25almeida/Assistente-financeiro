@@ -22,7 +22,7 @@ META_API_VERSION = os.getenv("META_API_VERSION")
 def home():
     return send_file("dashboard.html")
     
-    @app.route("/carteira", methods=["GET"])
+@app.route("/carteira", methods=["GET"])
 def carteira():
     return send_file("carteira.html")
 
