@@ -21,6 +21,10 @@ META_API_VERSION = os.getenv("META_API_VERSION")
 @app.route("/", methods=["GET"])
 def home():
     return send_file("dashboard.html")
+    
+    @app.route("/carteira", methods=["GET"])
+def carteira():
+    return send_file("carteira.html")
 
 @app.route("/privacidade", methods=["GET"])
 def privacidade():
