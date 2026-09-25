@@ -381,7 +381,53 @@ if (!resposta.ok) {
 
     abrirFormulario();
 }
+async function carregarAtivos() {
+    const resposta = await fetch("/api/ativos");
 
+    if (!resposta.ok) {
+        return;
+    }
+
+    const ativos = await resposta.json();
+    const lista = document.getElementById("listaAtivos");
+
+    lista.innerHTML = "";
+
+    ativos.forEach(item => {
+        const quantidade = Number(item.quantidade);
+        const preco = Number(item.preco_medio);
+        const total = quantidade * preco;
+
+        const linha = document.createElement("tr");
+
+        linha.innerHTML = `
+            <td>
+                <span class="ativo">${item.ativo}</span>
+                <span class="empresa">Ativo cadastrado</span>
+            </td>
+
+            <td>${quantidade.toLocaleString("pt-BR")}</td>
+
+            <td>
+                ${preco.toLocaleString(
+                    "pt-BR",
+                    {style:"currency", currency:"BRL"}
+                )}
+            </td>
+
+            <td>
+                ${total.toLocaleString(
+                    "pt-BR",
+                    {style:"currency", currency:"BRL"}
+                )}
+            </td>
+        `;
+
+        lista.appendChild(linha);
+    });
+}
+
+carregarAtivos();
 </script>
 
 </body>
