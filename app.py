@@ -22,7 +22,34 @@ META_API_VERSION = os.getenv("META_API_VERSION")
 def home():
     return "Assistente Financeiro funcionando com Meta!", 200
 
+@app.route("/privacidade", methods=["GET"])
+def privacidade():
+    return """
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Política de Privacidade - Assistente Financeiro</title>
+    </head>
+    <body>
+        <h1>Política de Privacidade</h1>
+        <p>O Assistente Financeiro utiliza informações enviadas pelo usuário
+        através do WhatsApp exclusivamente para fornecer as funcionalidades
+        do serviço.</p>
 
+        <p>As informações podem incluir mensagens relacionadas a receitas,
+        despesas e outros registros financeiros enviados voluntariamente
+        pelo usuário.</p>
+
+        <p>Os dados não são vendidos ou compartilhados para fins publicitários.</p>
+
+        <p>O usuário pode solicitar a exclusão de seus dados a qualquer momento.</p>
+
+        <p>Contato: jessealmeida016@gmail.com</p>
+
+        <p>Última atualização: 25 de setembro de 2026.</p>
+    </body>
+    </html>
+    """, 200
 # Verificação do webhook pela Meta
 @app.route("/webhook", methods=["GET"])
 def verificar_webhook():
