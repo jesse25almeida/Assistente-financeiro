@@ -1,23 +1,29 @@
 import os
 import re
-from flask import Flask, request
-from twilio.rest import Client
+import requests
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "meu_token_financeiro_2026")
+VERIFY_TOKEN = os.getenv(
+    "VERIFY_TOKEN",
+    "meu_token_financeiro_2026"
+)
 
-TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
-TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
-TWILIO_WHATSAPP_NUMBER = os.getenv("TWILIO_WHATSAPP_NUMBER")
+META_ACCESS_TOKEN = os.getenv("META_ACCESS_TOKEN")
+META_PHONE_NUMBER_ID = os.getenv("META_PHONE_NUMBER_ID")
+
+# Deixe a versão configurável para podermos atualizar
+# sem alterar o código inteiro.
+META_API_VERSION = os.getenv("META_API_VERSION")
 
 
 @app.route("/", methods=["GET"])
 def home():
-    return "Assistente Financeiro funcionando!", 200
+    return "Assistente Financeiro funcionando com Meta!", 200
 
 
-# Mantemos a verificacao antiga da Meta
+# Verificação do webhook pela Meta
 @app.route("/webhook", methods=["GET"])
 def verificar_webhook():
     mode = request.args.get("hub.mode")
@@ -25,9 +31,10 @@ def verificar_webhook():
     challenge = request.args.get("hub.challenge")
 
     if mode == "subscribe" and token == VERIFY_TOKEN:
+        print("Webhook verificado pela Meta!", flush=True)
         return challenge, 200
 
-    return "Webhook funcionando", 200
+    return "Token de verificação inválido", 403
 
 
 def entender_mensagem(texto):
@@ -95,45 +102,117 @@ def criar_resposta(texto):
     )
 
 
+def enviar_mensagem(numero, texto):
+    if not META_ACCESS_TOKEN:
+        raise Exception("META_ACCESS_TOKEN não configurado")
+
+    if not META_PHONE_NUMBER_ID:
+        raise Exception("META_PHONE_NUMBER_ID não configurado")
+
+    if not META_API_VERSION:
+        raise Exception("META_API_VERSION não configurado")
+
+    url = (
+        f"https://graph.facebook.com/"
+        f"{META_API_VERSION}/"
+        f"{META_PHONE_NUMBER_ID}/messages"
+    )
+
+    headers = {
+        "Authorization": f"Bearer {META_ACCESS_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": numero,
+        "type": "text",
+        "text": {
+            "preview_url": False,
+            "body": texto
+        }
+    }
+
+    resposta = requests.post(
+        url,
+        headers=headers,
+        json=payload,
+        timeout=15
+    )
+
+    print(
+        "Resposta da Meta:",
+        resposta.status_code,
+        resposta.text,
+        flush=True
+    )
+
+    resposta.raise_for_status()
+
+    return resposta.json()
+
+
 @app.route("/webhook", methods=["POST"])
 def receber_webhook():
-    mensagem = request.form.get("Body", "").strip()
-    remetente = request.form.get("From", "").strip()
+    dados = request.get_json(silent=True) or {}
 
-    print("Mensagem recebida:", mensagem, flush=True)
-    print("Remetente:", remetente, flush=True)
-
-    if not mensagem or not remetente:
-        return "OK", 200
-
-    resposta = criar_resposta(mensagem)
+    print("Webhook recebido:", dados, flush=True)
 
     try:
-        client = Client(
-            TWILIO_ACCOUNT_SID,
-            TWILIO_AUTH_TOKEN
-        )
+        entry = dados.get("entry", [])
 
-        mensagem_enviada = client.messages.create(
-            body=resposta,
-            from_=TWILIO_WHATSAPP_NUMBER,
-            to=remetente
-        )
+        if not entry:
+            return jsonify({"status": "ignored"}), 200
 
-        print(
-            "Resposta enviada pela Twilio:",
-            mensagem_enviada.sid,
-            flush=True
-        )
+        changes = entry[0].get("changes", [])
+
+        if not changes:
+            return jsonify({"status": "ignored"}), 200
+
+        value = changes[0].get("value", {})
+
+        # A Meta também envia eventos de status
+        messages = value.get("messages", [])
+
+        if not messages:
+            return jsonify({"status": "ignored"}), 200
+
+        mensagem = messages[0]
+
+        remetente = mensagem.get("from")
+        tipo_mensagem = mensagem.get("type")
+
+        if tipo_mensagem != "text":
+            print(
+                "Mensagem não textual ignorada:",
+                tipo_mensagem,
+                flush=True
+            )
+            return jsonify({"status": "ignored"}), 200
+
+        texto = mensagem.get("text", {}).get("body", "").strip()
+
+        if not remetente or not texto:
+            return jsonify({"status": "ignored"}), 200
+
+        print("Mensagem recebida:", texto, flush=True)
+        print("Remetente:", remetente, flush=True)
+
+        resposta = criar_resposta(texto)
+
+        enviar_mensagem(remetente, resposta)
+
+        print("Resposta enviada pela Meta!", flush=True)
 
     except Exception as erro:
         print(
-            "ERRO AO ENVIAR:",
+            "ERRO NO WEBHOOK:",
             str(erro),
             flush=True
         )
 
-    return "OK", 200
+    return jsonify({"status": "ok"}), 200
 
 
 if __name__ == "__main__":
