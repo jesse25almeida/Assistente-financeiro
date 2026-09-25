@@ -314,7 +314,7 @@ function abrirFormulario() {
         .classList.toggle("aberto");
 }
 
-function adicionarAtivo() {
+async function adicionarAtivo() {
 
     const ativo =
         document.getElementById("ativo").value.toUpperCase();
@@ -328,7 +328,23 @@ function adicionarAtivo() {
     if (!ativo || quantidade <= 0 || preco <= 0) {
         alert("Preencha ativo, quantidade e preço médio.");
         return;
-    }
+    } 
+    const resposta = await fetch("/api/ativos", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+        ativo: ativo,
+        quantidade: quantidade,
+        preco_medio: preco
+    })
+});
+
+if (!resposta.ok) {
+    alert("Erro ao salvar o ativo.");
+    return;
+}
 
     const total = quantidade * preco;
 
