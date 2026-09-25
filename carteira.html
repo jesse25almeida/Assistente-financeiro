@@ -210,7 +210,7 @@ td {
 
     <div class="card">
         <small>Valor investido</small>
-        <h2>R$ 103.200,00</h2>
+       <h2 id="valorInvestido">R$ 0,00</h2>
     </div>
 
     <div class="card">
@@ -390,6 +390,8 @@ async function carregarAtivos() {
 
     const ativos = await resposta.json();
     const lista = document.getElementById("listaAtivos");
+    
+    let valorInvestido = 0;
 
     lista.innerHTML = "";
 
@@ -397,6 +399,7 @@ async function carregarAtivos() {
         const quantidade = Number(item.quantidade);
         const preco = Number(item.preco_medio);
         const total = quantidade * preco;
+        valorInvestido += total;
 
         const linha = document.createElement("tr");
 
@@ -425,6 +428,11 @@ async function carregarAtivos() {
 
         lista.appendChild(linha);
     });
+    document.getElementById("valorInvestido").textContent =
+    valorInvestido.toLocaleString(
+        "pt-BR",
+        {style: "currency", currency: "BRL"}
+    );
 }
 
 carregarAtivos();
