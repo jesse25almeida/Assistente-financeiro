@@ -1,10 +1,33 @@
 import os
 import re
 import requests
+import psycopg2
 from flask import Flask, request, jsonify, send_file
 
 app = Flask(__name__)
 
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+def conectar_banco():
+    return psycopg2.connect(DATABASE_URL)
+    
+def criar_tabela():
+    conexao = conectar_banco()
+    cursor = conexao.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS ativos (
+            id SERIAL PRIMARY KEY,
+            ativo VARCHAR(20) NOT NULL,
+            quantidade NUMERIC NOT NULL,
+            preco_medio NUMERIC NOT NULL
+        )
+    """)
+
+    conexao.commit()
+    cursor.close()
+    conexao.close()
+    
 VERIFY_TOKEN = os.getenv(
     "VERIFY_TOKEN",
     "meu_token_financeiro_2026"
@@ -245,6 +268,7 @@ def receber_webhook():
 
     return jsonify({"status": "ok"}), 200
 
+criar_tabela()
 
 if __name__ == "__main__":
     porta = int(os.environ.get("PORT", 5000))
