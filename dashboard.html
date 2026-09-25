@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assistente Financeiro</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #07111f;
+            color: #ffffff;
+        }
+
+        .app {
+            max-width: 1200px;
+            margin: auto;
+            padding: 24px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            font-size: 26px;
+        }
+
+        .logo p {
+            color: #8fa3b8;
+            margin-top: 5px;
+        }
+
+        nav {
+            display: flex;
+            gap: 25px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #1c2b3d;
+        }
+
+        nav a {
+            color: #9eb0c3;
+            text-decoration: none;
+            padding: 14px 4px;
+        }
+
+        nav a.active {
+            color: #3b82f6;
+            border-bottom: 2px solid #3b82f6;
+        }
+
+        .card {
+            background: #0d1b2a;
+            border: 1px solid #1b3045;
+            border-radius: 18px;
+            padding: 24px;
+        }
+
+        .patrimonio {
+            margin-bottom: 20px;
+        }
+
+        .patrimonio small {
+            color: #8fa3b8;
+        }
+
+        .patrimonio h2 {
+            font-size: 42px;
+            margin: 10px 0;
+        }
+
+        .positivo {
+            color: #20d98b;
+        }
+
+        .negativo {
+            color: #ff5b68;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .info h3 {
+            color: #91a5ba;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .info strong {
+            font-size: 21px;
+        }
+
+        .conteudo {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .grafico {
+            height: 260px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6f849a;
+        }
+
+        .mercado-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 16px 0;
+            border-bottom: 1px solid #1c3044;
+        }
+
+        .mercado-item:last-child {
+            border-bottom: none;
+        }
+
+        @media (max-width: 800px) {
+            .grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .conteudo {
+                grid-template-columns: 1fr;
+            }
+
+            nav {
+                overflow-x: auto;
+            }
+
+            .patrimonio h2 {
+                font-size: 34px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <header>
+        <div class="logo">
+            <h1>📊 Assistente Financeiro</h1>
+            <p>Seu guia no mercado financeiro</p>
+        </div>
+    </header>
+
+    <nav>
+        <a href="#" class="active">Visão Geral</a>
+        <a href="#">Carteira</a>
+        <a href="#">Mercado</a>
+        <a href="#">Proventos</a>
+        <a href="#">Assistente IA</a>
+    </nav>
+
+    <section class="card patrimonio">
+        <small>Patrimônio Total</small>
+
+        <h2>R$ 125.430,27</h2>
+
+        <p class="positivo">
+            + R$ 12.584,32 (+11,16%)
+        </p>
+    </section>
+
+    <section class="grid">
+
+        <div class="card info">
+            <h3>Resultado do dia</h3>
+            <strong class="positivo">+ R$ 1.587,64</strong>
+        </div>
+
+        <div class="card info">
+            <h3>Rentabilidade</h3>
+            <strong class="positivo">+ 11,16%</strong>
+        </div>
+
+        <div class="card info">
+            <h3>Aportes</h3>
+            <strong>R$ 18.000,00</strong>
+        </div>
+
+        <div class="card info">
+            <h3>Proventos</h3>
+            <strong>R$ 1.245,32</strong>
+        </div>
+
+    </section>
+
+    <section class="conteudo">
+
+        <div class="card">
+            <h3>Evolução da carteira</h3>
+
+            <div class="grafico">
+                📈 Gráfico da carteira será conectado aqui
+            </div>
+        </div>
+
+        <div class="card">
+
+            <h3>Mercado hoje</h3>
+
+            <div class="mercado-item">
+                <span>Ibovespa</span>
+                <strong class="positivo">+1,12%</strong>
+            </div>
+
+            <div class="mercado-item">
+                <span>Dólar</span>
+                <strong class="negativo">-0,48%</strong>
+            </div>
+
+            <div class="mercado-item">
+                <span>Bitcoin</span>
+                <strong class="positivo">+2,35%</strong>
+            </div>
+
+            <div class="mercado-item">
+                <span>IFIX</span>
+                <strong class="positivo">+0,42%</strong>
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+</body>
+</html>
